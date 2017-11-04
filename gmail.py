@@ -151,6 +151,10 @@ def main():
         #grab each message with the desired message ID
         message = GetMessage(service, 'me', msgId)
 
+        #get the date of each message
+        epoch = int(message['internalDate'])
+        calendar = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(epoch/1e3))
+
         #grab the payload of each message
         payload = message['payload']
         parts = payload['parts']
@@ -162,10 +166,6 @@ def main():
         data = data.replace('-','+')
         data = data.replace('_','/')
         data = base64.b64decode(bytes(data, 'UTF-8'))
-
-        #get the date of each message
-        epoch = int(message['internalDate'])
-        calendar = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(epoch/1e3))
 
         #grab links for images or videos
         for link in BeautifulSoup(data, 'lxml', parse_only=SoupStrainer('a')):
@@ -185,7 +185,7 @@ def main():
             to do:
                 use urllib or similar to download each link to follow
                 name file with calendar + '_' + linkctr
-
+            """
 
 if __name__ == '__main__':
     main()
