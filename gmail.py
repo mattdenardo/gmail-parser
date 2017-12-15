@@ -1,10 +1,20 @@
 """
-This script processes emails tagged as 'Daycare reports' in order to extract the 
+This script processes emails from daycare tagged in a user's Gmail Inbox in order to extract the 
 linked photos and videos and save them by date.
 
 Before running this script, the user should authenticate this script by following 
 the link: https://developers.google.com/gmail/api/quickstart/python
 and download client_secret.json to the same directory as this script.
+
+Dependencies:
+        Python 3
+        Beautiful Soup 4: pip install beautifulsoup4
+        Gmail API for Python: pip install --upgrade google-api-python-client
+        lxml XML parser: pip install lxml
+
+To do:
+        pass in inbox tag as command line argument rather than hardcoding
+        pass in save location/prefix as command line argument rather than hardcoding
 """
 
 #import libraries
@@ -14,6 +24,7 @@ import os
 import base64
 import email
 import time
+import urllib.request
 
 from bs4 import BeautifulSoup, SoupStrainer
 
@@ -124,9 +135,7 @@ def GetMessage(service, user_id, msg_id):
   """
   try:
     message = service.users().messages().get(userId=user_id, id=msg_id).execute()
-
     #print('Message snippet: %s' % message['snippet'])
-
     return message
   except errors.HttpError:#, error:
     print('An error occurred: %s' % error)
@@ -140,9 +149,11 @@ def main():
     #look for the appropriate label in the inbox
     labels = ListLabels(service, 'me')
     for label in labels:
-        if label['name'] == 'Daycare reports':
+        if label['name'] == 'Ella daycare reports':
+        #if label['name'] == 'Liev daycare reports':
             labelID = label['id']
 
+    linkctr = 0
     #grab all the messages with the desired label ID
     msgs = ListMessagesWithLabels(service, 'me', labelID)
     for msg in msgs:
@@ -153,7 +164,7 @@ def main():
 
         #get the date of each message
         epoch = int(message['internalDate'])
-        calendar = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(epoch/1e3))
+        date = time.strftime('%Y-%m-%d', time.localtime(epoch/1e3))
 
         #grab the payload of each message
         payload = message['payload']
@@ -169,23 +180,21 @@ def main():
 
         #grab links for images or videos
         for link in BeautifulSoup(data, 'lxml', parse_only=SoupStrainer('a')):
-            linkctr = 0
 
             #get links by extension
             if link['href'][-3:]=='jpg' or link['href'][-3:]=='mp4':
                 linkctr = linkctr + 1
-                follow = link['href'])
-        
+                url = link['href']
+                local = 'Ella_' + date + '_' + str(linkctr).zfill(4) + '.' + link['href'][-3:]
+                #try:
+                urllib.request.urlretrieve(url, local)
+                #except urllib.error as e:
+                    #print(e.reason)
+
             #in case file type changes, can try using link text
             #if link.string is not None:
                 #if link.string[:7]=='Link to':
                     #print(link['href'])
-
-            """
-            to do:
-                use urllib or similar to download each link to follow
-                name file with calendar + '_' + linkctr
-            """
 
 if __name__ == '__main__':
     main()
